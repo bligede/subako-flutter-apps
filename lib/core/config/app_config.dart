@@ -8,8 +8,8 @@ class AppConfig {
   static const String appName = 'SUBAKO';
   static const String vendor = 'Mikiko Technology';
   static const String tagline = 'Smart Irrigation Management Platform';
-  static const String appVersion = '0.2.1';
-  static const String buildLabel = 'v0.2.1 (3)';
+  static const String appVersion = '0.2.2';
+  static const String buildLabel = 'v0.2.2 (4)';
   static const String timezoneOffsetLabel = 'WITA';
 
   /// Firebase hanya diaktifkan bila project benar-benar dikonfigurasi.

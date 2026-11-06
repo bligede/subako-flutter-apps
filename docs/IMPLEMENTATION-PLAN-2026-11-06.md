@@ -1,5 +1,7 @@
 # Kelanjutan opsi Flutter — 6 November 2026
 
+> Klarifikasi lingkup setelah iterasi awal: **Flutter untuk user lapangan, PWA untuk admin dashboard**. Dokumen ini merekam rencana awal; acuan pembagian produk terbaru ada pada [PRODUCT-SCOPE](PRODUCT-SCOPE.md). Integrasi backend kedua client belum selesai.
+
 Permintaan pengguna: membuat opsi aplikasi Flutter terpisah dari Web-PWA. Repositori Android yang ditemukan sudah berisi commit `3725af0` pada default branch `feature/firebase-gemini-backend-v0.2`. Pekerjaan diteruskan pada `feature/flutter-option-v0.2`; baseline tersebut dipertahankan dan Web-PWA tidak dimigrasikan.
 
 ## Penilaian awal

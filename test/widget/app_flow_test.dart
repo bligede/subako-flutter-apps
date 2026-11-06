@@ -38,6 +38,7 @@ void main() {
         'Operasional',
         'Catatan Air',
         'Profil',
+        'Beranda',
       ]) {
         await tester.tap(
           find.widgetWithText(NavigationDestination, destination),

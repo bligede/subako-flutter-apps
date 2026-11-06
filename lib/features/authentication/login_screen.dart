@@ -23,10 +23,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _error;
 
   static const List<(String, String)> _demoAccounts = <(String, String)>[
+    ('Petani', 'petani@subako.demo'),
     ('Operator', 'operator@subako.demo'),
     ('Pekaseh', 'pekaseh@subako.demo'),
-    ('Petani', 'petani@subako.demo'),
-    ('Admin Mikiko', 'admin@subako.demo'),
   ];
 
   @override
@@ -106,7 +105,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Kelola pemantauan dan catatan air Subak Anda.',
+                'Aplikasi lapangan untuk petani, operator, dan Pekaseh.',
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(color: Brand.neutral),
               ),

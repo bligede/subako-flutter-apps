@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/constants/brand.dart';
-import '../../core/security/permissions.dart';
 import '../../shared/models/models.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/widgets/common.dart';
@@ -33,18 +32,11 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              _InfoRow(label: 'UID', value: user.uid),
               _InfoRow(
-                label: 'Situs',
+                label: 'Subak',
                 value: sites.isEmpty
-                    ? user.siteIds.join(', ')
+                    ? 'Data lokasi belum tersedia'
                     : sites.map((Site s) => s.name).join(', '),
-              ),
-              _InfoRow(
-                label: 'Izin',
-                value: (user.grantedPermissions ?? Permissions.of(user.role))
-                    .map((String p) => p.split('.').last)
-                    .join(', '),
               ),
             ],
           ),
@@ -96,7 +88,6 @@ class ProfileScreen extends ConsumerWidget {
                 'terpisah yang ditetapkan Product Owner.',
               ),
               SizedBox(height: 4),
-              Text('• Tidak ada API key Gemini di dalam aplikasi.'),
             ],
           ),
         ),
@@ -107,13 +98,7 @@ class ProfileScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               _InfoRow(label: 'Versi', value: AppConfig.buildLabel),
-              _InfoRow(
-                label: 'Backend',
-                value: AppConfig.firebaseEnabled
-                    ? 'Firebase (project ${AppConfig.firebaseProjectId})'
-                    : 'Demo lokal (SIMULATION)',
-              ),
-              _InfoRow(label: 'Model AI', value: AppConfig.geminiModel),
+              const Text('Aplikasi pengguna lapangan SUBAKO.'),
               const SizedBox(height: 8),
               const Text(
                 'SUBAKO by Mikiko Technology. Tradisi memutuskan, teknologi '

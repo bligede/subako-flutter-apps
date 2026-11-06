@@ -155,9 +155,9 @@ class _AppShellState extends ConsumerState<AppShell> {
         onDestinationSelected: (int value) => setState(() => _index = value),
         destinations: const <NavigationDestination>[
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Beranda',
           ),
           NavigationDestination(
             icon: Icon(Icons.water_outlined),

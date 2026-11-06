@@ -2,6 +2,8 @@
 
 Prinsip: **Tradisi memutuskan. Teknologi mengukur. SUBAKO mengeksekusi.**
 
+Pembagian client yang diklarifikasi pemilik: **Flutter untuk user lapangan, PWA untuk dashboard admin**. Lihat [PRODUCT-SCOPE](PRODUCT-SCOPE.md). Diagram di bawah menunjukkan arsitektur backend Flutter yang sudah disiapkan. Target PWA memakai data kanonik yang sama melalui API admin; adapter tersebut belum dibuat. Runtime PWA saat ini tetap FastAPI/PostgreSQL dengan sesi dan dataset terpisah.
+
 ```text
 ┌──────────────────────────┐
 │ Flutter Android (app)    │

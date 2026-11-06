@@ -1,7 +1,8 @@
-# SUBAKO — Smart Irrigation Management Platform (Android v0.2.1)
+# SUBAKO — Aplikasi pengguna lapangan (Android v0.2.2)
 
-Aplikasi Android untuk pengelolaan air Subak: pemantauan level/debit, status
-pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
+Aplikasi Android bagi petani, operator, dan Pekaseh: pemantauan level/debit,
+status pintu, jadwal air, Buku Catatan Air, alert, laporan, dan asisten AI.
+Dashboard admin memakai Web-PWA di repository terpisah.
 
 **by Mikiko Technology** · _Tradisi memutuskan. Teknologi mengukur. SUBAKO mengeksekusi._
 
@@ -10,7 +11,7 @@ pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
 - IoT: LoRaWAN/ChirpStack v4 melalui Cloud Run IoT bridge
 - Bahasa UI: Bahasa Indonesia · Zona waktu: WITA (UTC+8)
 
-Implementasi Flutter ini merupakan opsi aplikasi terpisah dari Web-PWA. Panduan terbaru: [DEVELOPMENT-SETUP](docs/DEVELOPMENT-SETUP.md), [catatan rilis](docs/RELEASE-NOTES-0.2.1.md), dan [rencana kelanjutan](docs/IMPLEMENTATION-PLAN-2026-11-06.md). Gunakan Flutter **3.47.9 / Dart 3.13.7**.
+Pembagian produk yang diklarifikasi pemilik: **Flutter untuk user, PWA untuk admin dashboard**. Keduanya bagian dari sistem SUBAKO. Lihat [lingkup produk dan integrasi](docs/PRODUCT-SCOPE.md). PWA masih memakai FastAPI/PostgreSQL, sedangkan Flutter memakai Firebase; integrasi data bersama belum diimplementasikan. Panduan: [DEVELOPMENT-SETUP](docs/DEVELOPMENT-SETUP.md), [catatan rilis 0.2.2](docs/RELEASE-NOTES-0.2.2.md), dan [rencana awal](docs/IMPLEMENTATION-PLAN-2026-11-06.md). Gunakan Flutter **3.47.9 / Dart 3.13.7**.
 
 ## Status build ini
 
@@ -46,7 +47,8 @@ Akun demo (sandi `Subako#2026`):
 | `petani@subako.demo` | farmer_viewer |
 | `operator@subako.demo` | operator |
 | `pekaseh@subako.demo` | pekaseh |
-| `admin@subako.demo` | mikiko_admin |
+
+Akun admin yang tersimpan pada fixture tetap tersedia untuk pengujian permission; shortcut admin tidak ditampilkan pada login aplikasi pengguna. Administrasi akun/perangkat berada pada lingkup dashboard PWA.
 
 ## Menjalankan dengan Firebase
 
@@ -82,7 +84,7 @@ npm --prefix cloud-run/iot-bridge run typecheck              # lulus
 
 Build APK memerlukan JDK + Android SDK; lihat [docs/deployment.md](docs/deployment.md).
 
-Hasil aktual, hash APK dan batas verifikasi cloud ada pada [laporan verifikasi 0.2.1](docs/VERIFICATION-0.2.1.md). Kedua APK debug berhasil dibangun dan diverifikasi tanda tangannya; belum ada uji pemasangan pada ponsel nyata. Auth/Firestore online lulus, sedangkan generasi Gemini masih timeout. Untuk mengulang backend jalankan `npm ci` dan `npm --prefix functions ci` terlebih dahulu (JDK 21, Node 24). Build APK: `flutter build apk --debug --flavor demo --dart-define=SUBAKO_FIREBASE_ENABLED=false`.
+Hasil aktual dan hash APK terbaru ada pada [laporan verifikasi 0.2.2](docs/VERIFICATION-0.2.2.md). Flutter analyze dan 30 tes diulang untuk 0.2.2; hasil backend (10+5 tes) dan cloud berasal dari [verifikasi 0.2.1](docs/VERIFICATION-0.2.1.md), karena source backend tidak berubah. Kedua APK debug 0.2.2 berhasil dibangun dan diverifikasi tanda tangannya; belum ada uji pemasangan pada ponsel nyata. Auth/Firestore online terakhir lulus, sedangkan generasi Gemini masih timeout. Untuk mengulang backend jalankan `npm ci` dan `npm --prefix functions ci` terlebih dahulu (JDK 21, Node 24). Build APK: `flutter build apk --debug --flavor demo --dart-define=SUBAKO_FIREBASE_ENABLED=false`.
 
 ## Batasan keselamatan
 

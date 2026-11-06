@@ -1,6 +1,6 @@
-# Menjalankan opsi Flutter SUBAKO
+# Menjalankan aplikasi pengguna Flutter SUBAKO
 
-Opsi Android ini terpisah dari Web-PWA. Baseline repo dipertahankan pada commit `3725af0`; kelanjutan berada di branch `feature/flutter-option-v0.2`. Flutter dipin ke **3.47.9 / Dart 3.13.7**. Pada mesin kerja SDK khusus tersedia di `D:/Wahyu/.tools/flutter-subako`; SDK global tidak diubah.
+Flutter adalah aplikasi pengguna lapangan; Web-PWA adalah dashboard admin dalam sistem SUBAKO. Lihat [lingkup produk](PRODUCT-SCOPE.md) untuk batas fitur dan status integrasi backend. Baseline repo dipertahankan pada commit `3725af0`; kelanjutan berada di branch `feature/flutter-option-v0.2`. Flutter dipin ke **3.47.9 / Dart 3.13.7**. Pada mesin kerja SDK khusus tersedia di `D:/Wahyu/.tools/flutter-subako`; SDK global tidak diubah.
 
 ## Demo tanpa cloud
 
