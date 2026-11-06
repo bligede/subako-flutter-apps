@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "subako-dev",
+    "development": "subako-dev",
+    "staging": "subako-staging",
+    "production": "subako-production"
+  }
+}

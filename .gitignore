@@ -1,0 +1,51 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.iml
+.idea/
+.vscode/
+
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+android/key.properties
+android/app/*.jks
+android/app/*.keystore
+android/app/upload-keystore.jks
+*.apk
+*.aab
+
+# Firebase / Google Cloud secrets
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-service-account.json
+serviceAccountKey.json
+.service-account.json
+.env
+.env.*
+!.env.example
+appcheck-debug-token*
+**/appcheck-debug-token*
+.secret/
+secrets/
+
+# Functions / Cloud Run
+functions/node_modules/
+functions/lib/
+cloud-run/**/node_modules/
+cloud-run/**/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated coverage
+coverage/
+lcov.info

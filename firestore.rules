@@ -1,0 +1,139 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function memberDoc(siteId) {
+      return /databases/$(database)/documents/sites/$(siteId)/members/$(request.auth.uid);
+    }
+
+    function isMember(siteId) {
+      return signedIn() && exists(memberDoc(siteId));
+    }
+
+    function memberData(siteId) {
+      return get(memberDoc(siteId)).data;
+    }
+
+    function hasPermission(siteId, permission) {
+      return isMember(siteId) && permission in memberData(siteId).permissions;
+    }
+
+    // Profil hanya boleh dibaca pemiliknya; perubahan peran lewat Functions.
+    match /users/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    match /sites/{siteId} {
+      allow read: if isMember(siteId);
+      allow write: if false;
+
+      match /members/{uid} {
+        allow read: if isMember(siteId) || (signedIn() && request.auth.uid == uid);
+        allow write: if false;
+      }
+
+      match /{document=**} {
+        allow read: if isMember(siteId);
+        allow write: if false;
+      }
+    }
+
+    // Metadata perangkat dapat dibaca anggota situs; provisioning via admin.
+    match /devices/{deviceId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /gateways/{gatewayId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /telemetryLatest/{deviceId} {
+      allow read: if signedIn() && isMember(
+        get(/databases/$(database)/documents/devices/$(deviceId)).data.siteId
+      );
+      allow write: if false;
+    }
+
+    match /telemetryEvents/{eventId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    // Aturan air: dibaca anggota; semua perubahan lewat Functions.
+    match /waterRules/{ruleId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+
+      match /versions/{versionId} {
+        allow read: if signedIn() && isMember(
+          get(/databases/$(database)/documents/waterRules/$(ruleId)).data.siteId
+        );
+        allow write: if false;
+      }
+    }
+
+    match /waterSchedules/{scheduleId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /commands/{commandId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /gateEvents/{eventId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /waterLedger/{entryId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /ledgerSeals/{sealId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /alerts/{alertId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    match /auditEvents/{eventId} {
+      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow write: if false;
+    }
+
+    // Chat pribadi: hanya pemilik sesi.
+    match /chatSessions/{sessionId} {
+      allow read, write: if signedIn() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+
+      match /messages/{messageId} {
+        allow read, write: if signedIn() &&
+          get(/databases/$(database)/documents/chatSessions/$(sessionId)).data.ownerUid == request.auth.uid;
+      }
+    }
+
+    match /fcmTokens/{tokenId} {
+      allow read, write: if signedIn() && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    // Nilai default: tolak.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
