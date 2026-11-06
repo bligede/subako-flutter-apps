@@ -23,8 +23,10 @@ interface Membership {
 }
 
 async function requireMembership(siteId: string, uid: string): Promise<Membership> {
+  const profile = (await db.doc(`users/${uid}`).get()).data();
+  if (profile?.active !== true) throw new HttpsError("permission-denied", "Akun tidak aktif.");
   const snap = await db.doc(`sites/${siteId}/members/${uid}`).get();
-  if (!snap.exists) {
+  if (!snap.exists || snap.data()?.active !== true) {
     throw new HttpsError("permission-denied", "Anda bukan anggota situs ini.");
   }
   const data = snap.data() ?? {};
@@ -66,89 +68,12 @@ async function audit(event: {
  * Membuat command pintu. Klien tidak pernah menulis koleksi commands.
  * Dispatch fisik dilakukan Cloud Run command-dispatcher, bukan di sini.
  */
-export const createGateCommand = onCall(async (request) => {
-  const uid = requireAuth(request.auth);
-  const data = request.data as Record<string, unknown>;
-  const siteId = String(data.siteId ?? "");
-  const gateId = String(data.gateId ?? "");
-  const target = Number(data.targetPositionPercent);
-  const reason = String(data.reason ?? "").trim();
-
-  if (!siteId || !gateId) {
-    throw new HttpsError("invalid-argument", "siteId dan gateId wajib.");
-  }
-  if (!Number.isFinite(target) || target < 0 || target > 100) {
-    throw new HttpsError("invalid-argument", "Target posisi harus 0-100.");
-  }
-  if (reason.length < 8) {
-    throw new HttpsError("invalid-argument", "Alasan operasional wajib diisi.");
-  }
-
-  const member = await requireMembership(siteId, uid);
-  requirePermission(member, PERM.command);
-
-  const gateSnap = await db.doc(`devices/${gateId}`).get();
-  if (!gateSnap.exists) {
-    throw new HttpsError("not-found", "Gate tidak ditemukan.");
-  }
-  const gate = gateSnap.data() ?? {};
-  if (gate.siteId !== siteId) {
-    throw new HttpsError("permission-denied", "Gate bukan milik situs ini.");
-  }
-  const mode = String(gate.mode ?? "IDLE");
-  if (mode === "MANUAL" || mode === "FAULT") {
-    throw new HttpsError(
-      "failed-precondition",
-      `Mode ${mode} tidak dapat ditimpa oleh aplikasi.`,
-    );
-  }
-
-  const rules = await db
-    .collection("waterRules")
-    .where("siteId", "==", siteId)
-    .where("status", "==", "PUBLISHED")
-    .limit(1)
-    .get();
-  if (rules.empty) {
-    throw new HttpsError(
-      "failed-precondition",
-      "Tidak ada aturan air PUBLISHED yang berlaku.",
-    );
-  }
-  const rule = rules.docs[0];
-
-  const now = Timestamp.now();
-  const command = db.collection("commands").doc();
-  await command.set({
-    gateId,
-    siteId,
-    action: "SET_POSITION",
-    targetPositionPercent: target,
-    status: "CREATED",
-    actorUid: uid,
-    ruleId: rule.id,
-    ruleVersion: rule.data().version ?? 1,
-    reason,
-    clientRequestId: String(data.clientRequestId ?? ""),
-    createdAt: now,
-    updatedAt: now,
-    expiresAt: Timestamp.fromMillis(now.toMillis() + 2 * 60 * 1000),
-    source: "USER",
-  });
-
-  await audit({
-    siteId,
-    actorUid: uid,
-    action: "command.create",
-    target: command.id,
-    result: "CREATED",
-    reason,
-  });
-
-  return { commandId: command.id, status: "CREATED", ruleId: rule.id };
+export const createGateCommand = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
+  requireAuth(request.auth);
+  throw new HttpsError("failed-precondition", "Aktuasi fisik belum diaktifkan pada foundation. Gunakan simulasi lokal; dispatcher dan interlock belum dikomisioning.");
 });
 
-export const acknowledgeAlert = onCall(async (request) => {
+export const acknowledgeAlert = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
   const uid = requireAuth(request.auth);
   const alertId = String((request.data as Record<string, unknown>).alertId ?? "");
   const ref = db.doc(`alerts/${alertId}`);
@@ -161,22 +86,17 @@ export const acknowledgeAlert = onCall(async (request) => {
   const member = await requireMembership(siteId, uid);
   requirePermission(member, PERM.acknowledge);
 
-  await ref.update({
-    acknowledged: true,
-    acknowledgedBy: uid,
-    acknowledgedAt: FieldValue.serverTimestamp(),
-  });
-  await audit({
-    siteId,
-    actorUid: uid,
-    action: "alert.acknowledge",
-    target: alertId,
-    result: "OK",
+  await db.runTransaction(async tx => {
+    const current = (await tx.get(ref)).data();
+    if (!current || current.acknowledged === true) return;
+    tx.update(ref, {acknowledged: true, acknowledgedBy: uid, acknowledgedAt: FieldValue.serverTimestamp()});
+    tx.create(db.collection("auditEvents").doc(), {siteId, actorUid: uid,
+      action: "alert.acknowledge", target: alertId, result: "OK", source: "FUNCTION", createdAt: FieldValue.serverTimestamp()});
   });
   return { ok: true };
 });
 
-export const createWaterRuleDraft = onCall(async (request) => {
+export const createWaterRuleDraft = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
   const uid = requireAuth(request.auth);
   const data = request.data as Record<string, unknown>;
   const siteId = String(data.siteId ?? "");
@@ -206,7 +126,7 @@ export const createWaterRuleDraft = onCall(async (request) => {
   return { ruleId: ref.id, status: "DRAFT" };
 });
 
-export const submitWaterRule = onCall(async (request) => {
+export const submitWaterRule = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
   const uid = requireAuth(request.auth);
   const ruleId = String((request.data as Record<string, unknown>).ruleId ?? "");
   const ref = db.doc(`waterRules/${ruleId}`);
@@ -228,7 +148,7 @@ export const submitWaterRule = onCall(async (request) => {
  * Menyetujui dan menerbitkan aturan. Aturan terbit bersifat immutable:
  * versi lama diarsipkan ke subkoleksi versions, dokumen aktif naik versi.
  */
-export const approveWaterRule = onCall(async (request) => {
+export const approveWaterRule = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
   const uid = requireAuth(request.auth);
   const ruleId = String((request.data as Record<string, unknown>).ruleId ?? "");
   const ref = db.doc(`waterRules/${ruleId}`);
@@ -273,7 +193,7 @@ export const approveWaterRule = onCall(async (request) => {
 });
 
 /** Recompute hash chain; angka & format harus sama dengan klien Dart. */
-export const verifyLedger = onCall(async (request) => {
+export const verifyLedger = onCall({enforceAppCheck: process.env.FUNCTIONS_EMULATOR !== "true"}, async (request) => {
   const uid = requireAuth(request.auth);
   const siteId = String((request.data as Record<string, unknown>).siteId ?? "");
   await requireMembership(siteId, uid);
@@ -353,3 +273,5 @@ export const expireCommands = onSchedule("every 5 minutes", async () => {
     });
   }
 });
+
+export {getAiContext} from './ai_context';

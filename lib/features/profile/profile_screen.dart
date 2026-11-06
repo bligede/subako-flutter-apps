@@ -16,7 +16,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
     final List<Site> sites = ref.watch(sitesProvider).value ?? const <Site>[];
 
     if (user == null) {
@@ -42,7 +42,7 @@ class ProfileScreen extends ConsumerWidget {
               ),
               _InfoRow(
                 label: 'Izin',
-                value: Permissions.of(user.role)
+                value: (user.grantedPermissions ?? Permissions.of(user.role))
                     .map((String p) => p.split('.').last)
                     .join(', '),
               ),

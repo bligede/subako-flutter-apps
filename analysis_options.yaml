@@ -5,10 +5,15 @@ analyzer:
     strict-casts: true
     strict-raw-types: true
   exclude:
+    - node_modules/**
+    - functions/node_modules/**
+    - cloud-run/**/node_modules/**
+    - .local/**
     - build/**
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - android/**
+    - web/**
 
 linter:
   rules:

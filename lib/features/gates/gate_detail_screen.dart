@@ -20,7 +20,7 @@ class GateDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<Device>> devices = ref.watch(devicesProvider);
     final AsyncValue<List<GateCommand>> commands = ref.watch(commandsProvider);
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(gateId)),
@@ -42,7 +42,7 @@ class GateDetailScreen extends ConsumerWidget {
                   .toList(growable: false);
           final bool canCommand =
               user != null &&
-              Permissions.can(user.role, Permissions.sendGateCommand);
+              Permissions.forUser(user, Permissions.sendGateCommand);
 
           return ListView(
             padding: const EdgeInsets.all(16),

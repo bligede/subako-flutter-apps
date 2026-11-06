@@ -17,9 +17,9 @@ class RulesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<WaterRule>> rules = ref.watch(rulesProvider);
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
     final bool canManage =
-        user != null && Permissions.can(user.role, Permissions.manageRules);
+        user != null && Permissions.forUser(user, Permissions.manageRules);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Aturan & jadwal air')),

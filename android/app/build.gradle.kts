@@ -5,6 +5,7 @@ plugins {
 }
 
 android {
+    buildFeatures { resValues = true }
     namespace = "id.mikiko.subako"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
@@ -27,6 +28,19 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "environment"
+    productFlavors {
+        create("demo") {
+            dimension = "environment"
+            applicationIdSuffix = ".demo"
+            resValue("string", "app_name", "SUBAKO Demo")
+        }
+        create("development") {
+            dimension = "environment"
+            resValue("string", "app_name", "SUBAKO Development")
+        }
     }
 
     buildTypes {

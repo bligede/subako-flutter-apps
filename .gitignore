@@ -49,3 +49,12 @@ Thumbs.db
 # Generated coverage
 coverage/
 lcov.info
+
+# Local toolchain, emulator artifacts, private configuration and logs
+.local/
+node_modules/
+*.log
+**/google-services.json
+lib/firebase_options.dart
+config/*.local.json
+**/*service-account*.json

@@ -1,4 +1,4 @@
-# SUBAKO — Smart Irrigation Management Platform (Android v0.2)
+# SUBAKO — Smart Irrigation Management Platform (Android v0.2.1)
 
 Aplikasi Android untuk pengelolaan air Subak: pemantauan level/debit, status
 pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
@@ -10,6 +10,8 @@ pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
 - IoT: LoRaWAN/ChirpStack v4 melalui Cloud Run IoT bridge
 - Bahasa UI: Bahasa Indonesia · Zona waktu: WITA (UTC+8)
 
+Implementasi Flutter ini merupakan opsi aplikasi terpisah dari Web-PWA. Panduan terbaru: [DEVELOPMENT-SETUP](docs/DEVELOPMENT-SETUP.md), [catatan rilis](docs/RELEASE-NOTES-0.2.1.md), dan [rencana kelanjutan](docs/IMPLEMENTATION-PLAN-2026-11-06.md). Gunakan Flutter **3.47.9 / Dart 3.13.7**.
+
 ## Status build ini
 
 | Area | Status |
@@ -19,12 +21,12 @@ pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
 | Aturan air + siklus DRAFT→PUBLISHED | Selesai (demo repository) |
 | Buku Catatan Air + verifikasi rantai hash | Selesai |
 | Alert, laporan + ekspor CSV | Selesai |
-| AI assistant | Demo deterministik; adapter Firebase AI Logic belum diaktifkan |
-| Firestore rules + indexes | Ditulis, **belum diuji di emulator** |
-| Cloud Functions | Ditulis + typecheck; **belum di-deploy** |
+| AI assistant | Demo deterministik terpisah; adapter `firebase_ai` + konteks berotorisasi tersedia. Hasil koneksi cloud pada laporan verifikasi |
+| Firestore rules + indexes | Emulator tests; Rules/indeks development dipasang pada project khusus SUBAKO |
+| Cloud Functions | Emulator workflow tests; **belum di-deploy online**, mutation cloud default nonaktif |
 | Cloud Run IoT bridge | Ditulis + typecheck; **belum di-deploy** |
 | FCM, App Check produksi, peta, PDF | Belum diimplementasikan |
-| Project Firebase | Belum dibuat/dikonfigurasi (butuh akses Console) |
+| Project Firebase | `subako-dev-mikiko`; Email/Password Auth dan Firestore Jakarta, data SIMULATION |
 
 > Build default adalah **mode simulasi**: setiap angka diberi label
 > `SIMULATION`. Tidak ada data lapangan dan tidak ada perintah yang mencapai
@@ -34,7 +36,7 @@ pintu, aturan alokasi, Buku Catatan Air, alert, laporan, dan asisten AI.
 
 ```bash
 flutter pub get
-flutter run --dart-define=SUBAKO_FIREBASE_ENABLED=false
+flutter run --flavor demo --dart-define=SUBAKO_FIREBASE_ENABLED=false
 ```
 
 Akun demo (sandi `Subako#2026`):
@@ -48,10 +50,7 @@ Akun demo (sandi `Subako#2026`):
 
 ## Menjalankan dengan Firebase
 
-Lihat [docs/deployment.md](docs/deployment.md). Ringkasnya: daftarkan aplikasi
-Android, aktifkan Auth/Firestore/Functions/App Check/AI Logic, deploy rules,
-lalu build dengan `--dart-define=SUBAKO_FIREBASE_ENABLED=true` dan kredensial
-project. **Jangan** menaruh API key Gemini atau service account di repo.
+Ikuti [panduan development terbaru](docs/DEVELOPMENT-SETUP.md). Flavor `development` memakai `.local/firebase-development.json` yang diabaikan Git, dengan akun online bersandi acak terpisah dari demo. Jangan menaruh API key Gemini, App Check debug token atau service account di repo. Cloud Functions memerlukan setup deployment/billing tersendiri; proyek ini tidak otomatis dihubungkan ke akun billing.
 
 ## Struktur
 
@@ -74,12 +73,16 @@ test/          unit + widget test
 ```bash
 dart format --output=none --set-exit-if-changed lib test   # bersih
 flutter analyze                                            # No issues found!
-flutter test                                               # 23/23 lulus
-cd functions && npm run typecheck                          # lihat catatan di bawah
-cd cloud-run/iot-bridge && npm run typecheck               # lihat catatan di bawah
+flutter test                                               # 30/30 lulus
+npm run test:rules                                         # 10/10 lulus (emulator)
+npm run test:backend                                       # 5/5 lulus (emulator)
+npm --prefix functions run build                           # lulus
+npm --prefix cloud-run/iot-bridge run typecheck              # lulus
 ```
 
 Build APK memerlukan JDK + Android SDK; lihat [docs/deployment.md](docs/deployment.md).
+
+Hasil aktual, hash APK dan batas verifikasi cloud ada pada [laporan verifikasi 0.2.1](docs/VERIFICATION-0.2.1.md). Kedua APK debug berhasil dibangun dan diverifikasi tanda tangannya; belum ada uji pemasangan pada ponsel nyata. Auth/Firestore online lulus, sedangkan generasi Gemini masih timeout. Untuk mengulang backend jalankan `npm ci` dan `npm --prefix functions ci` terlebih dahulu (JDK 21, Node 24). Build APK: `flutter build apk --debug --flavor demo --dart-define=SUBAKO_FIREBASE_ENABLED=false`.
 
 ## Batasan keselamatan
 

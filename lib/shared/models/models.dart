@@ -11,6 +11,8 @@ class UserProfile {
     required this.role,
     required this.siteIds,
     this.phone,
+    this.memberships = const <String, SiteMembership>{},
+    this.grantedPermissions,
   });
 
   final String uid;
@@ -19,6 +21,23 @@ class UserProfile {
   final UserRole role;
   final List<String> siteIds;
   final String? phone;
+  final Map<String, SiteMembership> memberships;
+  final Set<String>? grantedPermissions;
+
+  UserProfile forSite(String siteId) {
+    final SiteMembership? membership = memberships[siteId];
+    if (memberships.isEmpty) return this;
+    return UserProfile(
+      uid: uid,
+      name: name,
+      email: email,
+      role: membership?.role ?? UserRole.farmerViewer,
+      siteIds: siteIds,
+      phone: phone,
+      memberships: memberships,
+      grantedPermissions: membership?.permissions ?? const <String>{},
+    );
+  }
 
   factory UserProfile.fromMap(String uid, Map<String, dynamic> map) {
     return UserProfile(
@@ -40,6 +59,13 @@ class UserProfile {
     'siteIds': siteIds,
     if (phone != null) 'phone': phone,
   };
+}
+
+@immutable
+class SiteMembership {
+  const SiteMembership({required this.role, required this.permissions});
+  final UserRole role;
+  final Set<String> permissions;
 }
 
 @immutable
@@ -82,6 +108,8 @@ class Device {
     this.motorCurrentAmp,
     this.upperLimit,
     this.lowerLimit,
+    this.fromCache = false,
+    this.simulated = false,
   });
 
   final String id;
@@ -98,6 +126,27 @@ class Device {
   final double? motorCurrentAmp;
   final bool? upperLimit;
   final bool? lowerLimit;
+  final bool fromCache;
+  final bool simulated;
+
+  Device withState(DataState value) => Device(
+    id: id,
+    name: name,
+    siteId: siteId,
+    kind: kind,
+    mode: mode,
+    dataState: value,
+    lastSeen: lastSeen,
+    positionPercent: positionPercent,
+    batteryPercent: batteryPercent,
+    rssi: rssi,
+    firmware: firmware,
+    motorCurrentAmp: motorCurrentAmp,
+    upperLimit: upperLimit,
+    lowerLimit: lowerLimit,
+    fromCache: fromCache,
+    simulated: simulated || dataState == DataState.simulation,
+  );
 
   bool get isGate => kind == DeviceKind.gate;
 }
@@ -112,6 +161,8 @@ class TelemetrySnapshot {
     required this.recordedAt,
     required this.dataState,
     required this.quality,
+    this.fromCache = false,
+    this.simulated = false,
   });
 
   final String deviceId;
@@ -121,6 +172,20 @@ class TelemetrySnapshot {
   final DateTime recordedAt;
   final DataState dataState;
   final String quality;
+  final bool fromCache;
+  final bool simulated;
+
+  TelemetrySnapshot withState(DataState value) => TelemetrySnapshot(
+    deviceId: deviceId,
+    upstreamCm: upstreamCm,
+    downstreamCm: downstreamCm,
+    flowLiterPerSecond: flowLiterPerSecond,
+    recordedAt: recordedAt,
+    dataState: value,
+    quality: quality,
+    fromCache: fromCache,
+    simulated: simulated || dataState == DataState.simulation,
+  );
 }
 
 @immutable

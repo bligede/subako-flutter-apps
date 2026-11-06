@@ -213,12 +213,30 @@ void main() {
       );
     });
 
-    test('SIMULATION menang atas umur data', () {
+    test('simulasi baru tetap diberi label SIMULATION', () {
       expect(
         Freshness.evaluate(now, now: now, simulated: true),
         DataState.simulation,
       );
     });
+
+    test(
+      'simulasi yang berhenti tetap menua dan timestamp masa depan tidak LIVE',
+      () {
+        expect(
+          Freshness.evaluate(
+            now.subtract(const Duration(days: 2)),
+            now: now,
+            simulated: true,
+          ),
+          DataState.offline,
+        );
+        expect(
+          Freshness.evaluate(now.add(const Duration(hours: 1)), now: now),
+          DataState.stale,
+        );
+      },
+    );
 
     test('hanya LIVE yang aman untuk command', () {
       expect(Freshness.isSafeForCommand(DataState.live), isTrue);

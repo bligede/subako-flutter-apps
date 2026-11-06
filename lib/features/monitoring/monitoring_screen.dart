@@ -22,9 +22,18 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
   final List<double> _upstream = <double>[];
   final List<double> _downstream = <double>[];
   final List<double> _flow = <double>[];
+  DateTime? _lastRecordedAt;
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(activeSiteIdProvider, (previous, next) {
+      if (previous != next) {
+        _upstream.clear();
+        _downstream.clear();
+        _flow.clear();
+        _lastRecordedAt = null;
+      }
+    });
     ref.listen<AsyncValue<TelemetrySnapshot>>(telemetryProvider, (
       AsyncValue<TelemetrySnapshot>? previous,
       AsyncValue<TelemetrySnapshot> next,
@@ -33,14 +42,12 @@ class _MonitoringScreenState extends ConsumerState<MonitoringScreen> {
       if (snapshot == null) {
         return;
       }
-      final bool isNew =
-          _upstream.isEmpty ||
-          _flow.isEmpty ||
-          _flow.last != snapshot.flowLiterPerSecond;
+      final bool isNew = _lastRecordedAt != snapshot.recordedAt;
       if (!isNew) {
         return;
       }
       setState(() {
+        _lastRecordedAt = snapshot.recordedAt;
         _upstream.add(snapshot.upstreamCm);
         _downstream.add(snapshot.downstreamCm);
         _flow.add(snapshot.flowLiterPerSecond);

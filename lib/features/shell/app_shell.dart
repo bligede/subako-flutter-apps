@@ -6,6 +6,7 @@ import '../../core/config/app_config.dart';
 import '../../core/constants/brand.dart';
 import '../../core/security/permissions.dart';
 import '../../shared/models/models.dart';
+import '../../shared/models/enums.dart';
 import '../../shared/providers/app_providers.dart';
 import '../../shared/widgets/common.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -26,12 +27,12 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
     if (user == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    final bool canAcknowledge = Permissions.can(
-      user.role,
+    final bool canAcknowledge = Permissions.forUser(
+      user,
       Permissions.acknowledgeAlert,
     );
     final int openAlerts = (ref.watch(alertsProvider).value ?? const <Alert>[])
@@ -52,12 +53,26 @@ class _AppShellState extends ConsumerState<AppShell> {
           children: <Widget>[
             const Icon(Icons.water_drop_outlined, color: Brand.forestGreen),
             const SizedBox(width: 8),
-            const Text(
-              AppConfig.appName,
-              style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    AppConfig.appName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  Text(
+                    user.role.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(width: 8),
-            RoleBadge(role: user.role),
           ],
         ),
         actions: <Widget>[
@@ -88,7 +103,41 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
       body: Column(
         children: <Widget>[
-          if (!AppConfig.firebaseEnabled) const SimulationBanner(),
+          if (!AppConfig.firebaseEnabled ||
+              (ref.watch(sitesProvider).value?.firstOrNull?.dataState ==
+                  DataState.simulation))
+            const SimulationBanner(),
+          if ((ref.watch(allSitesProvider).value?.length ?? 0) > 1)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: DropdownButtonFormField<String>(
+                key: ValueKey(ref.watch(activeSiteIdProvider)),
+                initialValue: ref.watch(activeSiteIdProvider),
+                decoration: const InputDecoration(labelText: 'Lokasi Subak'),
+                items: ref
+                    .watch(allSitesProvider)
+                    .value!
+                    .map(
+                      (site) => DropdownMenuItem(
+                        value: site.id,
+                        child: Text(site.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (site) {
+                  if (site != null) {
+                    ref.read(activeSiteIdProvider.notifier).select(site);
+                  }
+                },
+              ),
+            ),
+          if (user.siteIds.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Akun belum memiliki site aktif. Hubungi administrator.',
+              ),
+            ),
           Expanded(
             child: IndexedStack(index: _index, children: pages),
           ),

@@ -1,5 +1,7 @@
 # Spesifikasi Induk v0.2 — Firebase + Gemini
 
+Catatan kelanjutan 6 November 2026: berkas ini adalah ringkasan baseline commit `3725af0`. [Dokumen lengkap yang diberikan Product Owner](specifications/SUBAKO_FLUTTER_FIREBASE_GEMINI_MASTER_PROMPT_v0.2.md) kini disertakan tanpa mengubah isi sumber.
+
 Dokumen kanonik `SUBAKO_FLUTTER_FIREBASE_GEMINI_MASTER_PROMPT_v0.2.md`
 disediakan Product Owner (Mikiko Technology). Berkas ini mencatat bagian yang
 **mengikat implementasi** di repositori ini; bila terjadi perbedaan, dokumen

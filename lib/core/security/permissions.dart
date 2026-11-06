@@ -1,4 +1,5 @@
 import '../../shared/models/enums.dart';
+import '../../shared/models/models.dart';
 
 /// Permission granular yang dipakai UI dan divalidasi ulang di server.
 class Permissions {
@@ -65,6 +66,9 @@ class Permissions {
 
   static bool can(UserRole role, String permission) =>
       of(role).contains(permission);
+
+  static bool forUser(UserProfile user, String permission) =>
+      (user.grantedPermissions ?? of(user.role)).contains(permission);
 
   /// Admin Mikiko tidak otomatis berwenang menentukan alokasi air.
   static bool canDecideAllocation(UserRole role) =>

@@ -18,7 +18,7 @@ class RuleDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<WaterRule>> rules = ref.watch(rulesProvider);
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Detail aturan')),
@@ -35,10 +35,12 @@ class RuleDetailScreen extends ConsumerWidget {
             return const EmptyState(message: 'Aturan tidak ditemukan.');
           }
           final bool canApprove =
-              user != null && Permissions.canApproveRule(user.role);
+              user != null &&
+              Permissions.canApproveRule(user.role) &&
+              Permissions.forUser(user, Permissions.approveRules);
           final bool canManage =
               user != null &&
-              Permissions.can(user.role, Permissions.manageRules);
+              Permissions.forUser(user, Permissions.manageRules);
 
           return ListView(
             padding: const EdgeInsets.all(16),

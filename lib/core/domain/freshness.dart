@@ -12,13 +12,13 @@ class Freshness {
     Duration staleThreshold = AppConfig.staleThreshold,
     bool simulated = false,
   }) {
-    if (simulated) {
-      return DataState.simulation;
-    }
     final DateTime reference = (now ?? DateTime.now()).toUtc();
     final Duration age = reference.difference(recordedAt.toUtc());
-    if (age.isNegative || age <= liveThreshold) {
-      return DataState.live;
+    if (age < const Duration(minutes: -1)) {
+      return DataState.stale;
+    }
+    if (age <= liveThreshold) {
+      return simulated ? DataState.simulation : DataState.live;
     }
     if (age <= staleThreshold) {
       return DataState.stale;

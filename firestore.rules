@@ -12,7 +12,8 @@ service cloud.firestore {
     }
 
     function isMember(siteId) {
-      return signedIn() && exists(memberDoc(siteId));
+      return signedIn() && exists(memberDoc(siteId)) && get(memberDoc(siteId)).data.active == true
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.active == true;
     }
 
     function memberData(siteId) {
@@ -34,11 +35,15 @@ service cloud.firestore {
       allow write: if false;
 
       match /members/{uid} {
-        allow read: if isMember(siteId) || (signedIn() && request.auth.uid == uid);
+        allow read: if isMember(siteId) && request.auth.uid == uid;
         allow write: if false;
       }
 
-      match /{document=**} {
+      match /tempeks/{tempekId} {
+        allow read: if isMember(siteId);
+        allow write: if false;
+      }
+      match /channels/{channelId} {
         allow read: if isMember(siteId);
         allow write: if false;
       }
@@ -111,24 +116,47 @@ service cloud.firestore {
     }
 
     match /auditEvents/{eventId} {
-      allow read: if signedIn() && isMember(resource.data.siteId);
+      allow read: if signedIn() && hasPermission(resource.data.siteId, 'audit.view');
       allow write: if false;
     }
 
     // Chat pribadi: hanya pemilik sesi.
     match /chatSessions/{sessionId} {
-      allow read, write: if signedIn() && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == request.auth.uid;
+      function ownsSession() {
+        return signedIn() && resource.data.ownerUid == request.auth.uid && isMember(resource.data.siteId);
+      }
+      allow read, delete: if ownsSession();
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid
+        && isMember(request.resource.data.siteId)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'siteId', 'createdAt', 'updatedAt'])
+        && request.resource.data.createdAt == request.time && request.resource.data.updatedAt == request.time;
+      allow update: if ownsSession()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['updatedAt'])
+        && request.resource.data.updatedAt == request.time;
 
       match /messages/{messageId} {
-        allow read, write: if signedIn() &&
-          get(/databases/$(database)/documents/chatSessions/$(sessionId)).data.ownerUid == request.auth.uid;
+        function ownsParent() {
+          let parent = get(/databases/$(database)/documents/chatSessions/$(sessionId)).data;
+          return signedIn() && parent.ownerUid == request.auth.uid && isMember(parent.siteId);
+        }
+        allow read, delete: if ownsParent();
+        allow create: if ownsParent()
+          && request.resource.data.keys().hasOnly(['ownerUid', 'role', 'text', 'createdAt'])
+          && request.resource.data.ownerUid == request.auth.uid && request.resource.data.role == 'user'
+          && request.resource.data.text is string && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 2000 && request.resource.data.createdAt == request.time;
+        allow update: if false;
       }
     }
 
     match /fcmTokens/{tokenId} {
-      allow read, write: if signedIn() && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == request.auth.uid;
+      allow read, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && (resource == null || resource.data.ownerUid == request.auth.uid)
+        && request.resource.data.keys().hasOnly(['ownerUid', 'token', 'platform', 'updatedAt'])
+        && request.resource.data.token is string && request.resource.data.token.size() <= 4096
+        && request.resource.data.platform == 'android' && request.resource.data.updatedAt == request.time;
     }
 
     // Nilai default: tolak.

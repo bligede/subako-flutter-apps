@@ -18,10 +18,9 @@ class AlertsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final AsyncValue<List<Alert>> alerts = ref.watch(alertsProvider);
-    final UserProfile? user = ref.watch(authControllerProvider).value;
+    final UserProfile? user = ref.watch(activeUserProvider);
     final bool canAck =
-        user != null &&
-        Permissions.can(user.role, Permissions.acknowledgeAlert);
+        user != null && Permissions.forUser(user, Permissions.acknowledgeAlert);
 
     final Widget content = alerts.when(
       loading: () => const Center(child: CircularProgressIndicator()),

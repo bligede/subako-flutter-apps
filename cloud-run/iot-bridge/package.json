@@ -2,7 +2,7 @@
   "name": "subako-iot-bridge",
   "version": "0.2.0",
   "private": true,
-  "engines": { "node": "20" },
+  "engines": { "node": "22" },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

@@ -88,7 +88,28 @@ class _AiAssistantScreenState extends ConsumerState<AiAssistantScreen> {
         actions: <Widget>[
           IconButton(
             tooltip: 'Hapus percakapan',
-            onPressed: () => ref.read(chatControllerProvider.notifier).clear(),
+            onPressed: () async {
+              final confirmed = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Hapus percakapan?'),
+                  content: const Text('Riwayat sesi ini akan dibersihkan.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Batal'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Hapus'),
+                    ),
+                  ],
+                ),
+              );
+              if (confirmed == true && mounted) {
+                ref.read(chatControllerProvider.notifier).clear();
+              }
+            },
             icon: const Icon(Icons.delete_outline),
           ),
         ],

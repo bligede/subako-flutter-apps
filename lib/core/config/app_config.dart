@@ -8,8 +8,8 @@ class AppConfig {
   static const String appName = 'SUBAKO';
   static const String vendor = 'Mikiko Technology';
   static const String tagline = 'Smart Irrigation Management Platform';
-  static const String appVersion = '0.2.0';
-  static const String buildLabel = 'v0.2.0 (2)';
+  static const String appVersion = '0.2.1';
+  static const String buildLabel = 'v0.2.1 (3)';
   static const String timezoneOffsetLabel = 'WITA';
 
   /// Firebase hanya diaktifkan bila project benar-benar dikonfigurasi.
@@ -27,10 +27,25 @@ class AppConfig {
     defaultValue: '',
   );
 
+  static const bool useEmulators = bool.fromEnvironment('SUBAKO_EMULATORS');
+  static const bool appCheckDebug = bool.fromEnvironment(
+    'SUBAKO_APPCHECK_DEBUG',
+  );
+  static const bool geminiEnabled = bool.fromEnvironment(
+    'SUBAKO_GEMINI_ENABLED',
+  );
+  static const bool trustedFunctionsEnabled = bool.fromEnvironment(
+    'SUBAKO_TRUSTED_FUNCTIONS',
+  );
+  static const String functionsRegion = String.fromEnvironment(
+    'SUBAKO_FUNCTIONS_REGION',
+    defaultValue: 'asia-southeast2',
+  );
+
   /// Model Gemini dipilih terpusat; jangan disebar sebagai literal di UI.
   static const String geminiModel = String.fromEnvironment(
     'SUBAKO_GEMINI_MODEL',
-    defaultValue: 'gemini-2.5-flash',
+    defaultValue: 'gemini-3.8-flash',
   );
 
   static const Duration liveThreshold = Duration(minutes: 5);

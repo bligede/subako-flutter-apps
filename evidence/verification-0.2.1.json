@@ -1,0 +1,74 @@
+{
+  "version": "0.2.1+3",
+  "verificationDateWita": "2026-11-06",
+  "baselineCommit": "3725af0aca4c8c7e29367a44d3aff4fca46f9a8c",
+  "branch": "feature/flutter-option-v0.2",
+  "toolchain": {
+    "flutter": "3.47.9",
+    "dart": "3.13.7",
+    "jdk": "21.0.12.1",
+    "androidBuildTools": "36.0.0",
+    "node": "24.19.0"
+  },
+  "local": {
+    "flutterAnalyze": "PASS",
+    "flutterTestsPassed": 30,
+    "firestoreRulesTestsPassed": 10,
+    "functionsWorkflowTestsPassed": 5,
+    "functionsTypeScriptBuild": "PASS",
+    "iotBridgeTypecheck": "PASS",
+    "webPreviewBuild": "PASS",
+    "webBrowserSmoke": "TIMEOUT",
+    "physicalAndroidDeviceTest": "NOT_RUN",
+    "remoteCi": "NOT_VERIFIED"
+  },
+  "cloud": {
+    "project": "subako-dev-mikiko",
+    "firestoreRegion": "asia-southeast2",
+    "rulesAndIndexesDeployment": "PASS",
+    "executedAt": "2026-11-06T14:59:31.224Z",
+    "authenticationHttpStatus": 200,
+    "authorizedSiteHttpStatus": 200,
+    "unauthorizedSiteHttpStatus": 403,
+    "appCheckDebugExchangeHttpStatus": 200,
+    "appCheckEnforcementOwnerConfirmed": true,
+    "appCheckEnforcementProbe": "TIMEOUT",
+    "geminiModel": "gemini-3.8-flash",
+    "geminiGeneration": "TIMEOUT",
+    "functionsDeployed": false,
+    "iotBridgeDeployed": false,
+    "billingLinkedByThisWork": false,
+    "dataSource": "SIMULATION_STATIC_FIXTURES"
+  },
+  "android": {
+    "buildType": "debug",
+    "minSdk": 24,
+    "targetSdk": 36,
+    "abis": ["arm64-v8a", "armeabi-v7a", "x86_64"],
+    "debugCertificateSha256": "5909a5ee09f51c4c2d7c35d23adad0fbe0c324b04cb8dab28ea1d871af98e50a",
+    "artifacts": [
+      {
+        "file": "SUBAKO-Demo-0.2.1-debug.apk",
+        "applicationId": "id.mikiko.subako.demo",
+        "bytes": 182800795,
+        "sha256": "17a3a0ee9943bf1ae91209eac4f92b7c682e60ad22fc9ede932a1df6d0aea6f6",
+        "signatureV2": "PASS",
+        "zipCrc": "PASS",
+        "onlinePasswordExclusion": "PASS",
+        "appCheckDebugTokenExclusion": "PASS"
+      },
+      {
+        "file": "SUBAKO-Development-0.2.1-debug.apk",
+        "applicationId": "id.mikiko.subako",
+        "bytes": 182805447,
+        "sha256": "84396159f779a56e89c996dd238a4ee7d83a7d04fe3f1227c76eef50f2b3b876",
+        "signatureV2": "PASS",
+        "zipCrc": "PASS",
+        "onlinePasswordExclusion": "PASS",
+        "distribution": "PRIVATE_CONTAINS_DEBUG_APPCHECK_TOKEN"
+      }
+    ]
+  },
+  "physicalActuationEnabled": false,
+  "productionReady": false
+}

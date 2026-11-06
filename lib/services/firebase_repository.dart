@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -5,6 +7,7 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 
 import '../core/domain/freshness.dart';
+import '../core/config/app_config.dart';
 import '../shared/models/enums.dart';
 import '../shared/models/models.dart';
 import 'subako_repository.dart';
@@ -23,37 +26,75 @@ class FirebaseRepository implements SubakoRepository {
   final FirebaseFirestore firestore;
   final FirebaseAuth auth;
   final FirebaseFunctions? cloudFunctions;
+  UserProfile? _profile;
 
   @override
   UserProfile? get currentUser {
-    final User? user = auth.currentUser;
-    if (user == null) {
-      return null;
+    return auth.currentUser == null ? null : _profile;
+  }
+
+  Future<UserProfile> _loadProfile(User user) async {
+    final doc = await firestore.collection('users').doc(user.uid).get();
+    final data = doc.data();
+    if (data == null || data['active'] == false) {
+      throw const SubakoException(
+        'Akun belum diberi akses SUBAKO atau telah dinonaktifkan.',
+      );
     }
-    // Profil lengkap dimuat dari dokumen users/{uid}; fallback minimal.
+    final base = UserProfile.fromMap(user.uid, data);
+    final Map<String, SiteMembership> memberships = {};
+    for (final siteId in base.siteIds.take(30)) {
+      final member =
+          (await firestore.doc('sites/$siteId/members/${user.uid}').get())
+              .data();
+      if (member?['active'] != true) continue;
+      memberships[siteId] = SiteMembership(
+        role: UserRole.fromWire(member!['role'] as String?),
+        permissions: (member['permissions'] as List<dynamic>? ?? [])
+            .cast<String>()
+            .toSet(),
+      );
+    }
     return UserProfile(
       uid: user.uid,
-      name: user.displayName ?? user.email ?? 'Pengguna SUBAKO',
-      email: user.email ?? '',
-      role: UserRole.farmerViewer,
-      siteIds: const <String>[],
+      name: base.name,
+      email: user.email ?? base.email,
+      role: memberships.values.firstOrNull?.role ?? UserRole.farmerViewer,
+      siteIds: memberships.keys.toList(),
+      memberships: memberships,
+      grantedPermissions: const <String>{},
     );
   }
 
   @override
   Stream<UserProfile?> authStateChanges() {
-    return auth.authStateChanges().asyncMap((User? user) async {
-      if (user == null) {
-        return null;
+    return Stream.multi((controller) {
+      int generation = 0;
+      Future<void> refresh() async {
+        final int request = ++generation;
+        final User? user = auth.currentUser;
+        try {
+          final profile = user == null ? null : await _loadProfile(user);
+          if (request != generation || controller.isClosed) return;
+          _profile = profile;
+          controller.add(profile);
+        } on Object catch (error, stack) {
+          if (request != generation || controller.isClosed) return;
+          _profile = null;
+          controller.addError(error, stack);
+        }
       }
-      final DocumentSnapshot<Map<String, dynamic>> doc = await firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      if (!doc.exists) {
-        return currentUser;
-      }
-      return UserProfile.fromMap(user.uid, doc.data() ?? <String, dynamic>{});
+
+      final subscription = auth.idTokenChanges().listen((_) => refresh());
+      final timer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => refresh(),
+      );
+      controller.onCancel = () {
+        generation++;
+        timer.cancel();
+        subscription.cancel();
+      };
     });
   }
 
@@ -71,14 +112,8 @@ class FirebaseRepository implements SubakoRepository {
       if (user == null) {
         throw const SubakoException('Login gagal: sesi tidak terbentuk.');
       }
-      final DocumentSnapshot<Map<String, dynamic>> doc = await firestore
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      return UserProfile.fromMap(
-        user.uid,
-        doc.data() ?? <String, dynamic>{'email': email},
-      );
+      _profile = await _loadProfile(user);
+      return _profile!;
     } on FirebaseAuthException catch (error) {
       throw SubakoException(authMessage(error.code), code: error.code);
     }
@@ -102,7 +137,10 @@ class FirebaseRepository implements SubakoRepository {
   }
 
   @override
-  Future<void> signOut() => auth.signOut();
+  Future<void> signOut() async {
+    _profile = null;
+    await auth.signOut();
+  }
 
   @override
   Future<void> sendPasswordReset(String email) =>
@@ -110,22 +148,29 @@ class FirebaseRepository implements SubakoRepository {
 
   @override
   Stream<List<Site>> watchSites() {
-    return firestore.collection('sites').snapshots().map((snapshot) {
-      return snapshot.docs
-          .map((DocumentSnapshot<Map<String, dynamic>> doc) {
-            final Map<String, dynamic> data = doc.data() ?? <String, dynamic>{};
-            return Site(
-              id: doc.id,
-              name: (data['name'] as String?) ?? doc.id,
-              village: (data['village'] as String?) ?? '',
-              regency: (data['regency'] as String?) ?? '',
-              tempekCount: (data['tempekCount'] as num?)?.toInt() ?? 0,
-              gateCount: (data['gateCount'] as num?)?.toInt() ?? 0,
-              dataState: DataState.fromWire(data['dataState'] as String?),
-            );
-          })
-          .toList(growable: false);
-    });
+    final List<String> siteIds = _profile?.siteIds ?? [];
+    if (siteIds.isEmpty) return Stream.value(const <Site>[]);
+    return firestore
+        .collection('sites')
+        .where(FieldPath.documentId, whereIn: siteIds.take(30).toList())
+        .snapshots()
+        .map((snapshot) {
+          return snapshot.docs
+              .map((DocumentSnapshot<Map<String, dynamic>> doc) {
+                final Map<String, dynamic> data =
+                    doc.data() ?? <String, dynamic>{};
+                return Site(
+                  id: doc.id,
+                  name: (data['name'] as String?) ?? doc.id,
+                  village: (data['village'] as String?) ?? '',
+                  regency: (data['regency'] as String?) ?? '',
+                  tempekCount: (data['tempekCount'] as num?)?.toInt() ?? 0,
+                  gateCount: (data['gateCount'] as num?)?.toInt() ?? 0,
+                  dataState: DataState.fromWire(data['dataState'] as String?),
+                );
+              })
+              .toList(growable: false);
+        });
   }
 
   @override
@@ -133,7 +178,7 @@ class FirebaseRepository implements SubakoRepository {
     return firestore
         .collection('devices')
         .where('siteId', isEqualTo: siteId)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((snapshot) {
           return snapshot.docs.map(_deviceFromDoc).toList(growable: false);
         });
@@ -163,6 +208,8 @@ class FirebaseRepository implements SubakoRepository {
       motorCurrentAmp: (data['motorCurrentAmp'] as num?)?.toDouble(),
       upperLimit: data['upperLimit'] as bool?,
       lowerLimit: data['lowerLimit'] as bool?,
+      fromCache: doc.metadata.isFromCache,
+      simulated: data['source'] == 'SIMULATION',
     );
   }
 
@@ -171,12 +218,22 @@ class FirebaseRepository implements SubakoRepository {
     return firestore
         .collection('telemetryLatest')
         .doc(deviceId)
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((DocumentSnapshot<Map<String, dynamic>> doc) {
           final Map<String, dynamic> data = doc.data() ?? <String, dynamic>{};
           final Timestamp? ts = data['recordedAt'] as Timestamp?;
-          final DateTime recordedAt =
-              ts?.toDate().toUtc() ?? DateTime.now().toUtc();
+          final values = ['upstreamCm', 'downstreamCm', 'flowLiterPerSecond'];
+          if (!doc.exists ||
+              ts == null ||
+              !['OK', 'SUSPECT'].contains(data['quality']) ||
+              values.any(
+                (key) => data[key] is! num || !(data[key] as num).isFinite,
+              )) {
+            throw const SubakoException(
+              'Telemetry belum tersedia atau kualitas sensor tidak valid. Tidak ada nilai pengganti.',
+            );
+          }
+          final DateTime recordedAt = ts.toDate().toUtc();
           return TelemetrySnapshot(
             deviceId: deviceId,
             upstreamCm: (data['upstreamCm'] as num?)?.toDouble() ?? 0,
@@ -189,6 +246,8 @@ class FirebaseRepository implements SubakoRepository {
               simulated: data['source'] == 'SIMULATION',
             ),
             quality: (data['quality'] as String?) ?? 'Tidak diketahui',
+            fromCache: doc.metadata.isFromCache,
+            simulated: data['source'] == 'SIMULATION',
           );
         });
   }
@@ -345,15 +404,118 @@ class FirebaseRepository implements SubakoRepository {
     String name,
     Map<String, dynamic> payload,
   ) async {
+    if (!AppConfig.trustedFunctionsEnabled && !AppConfig.useEmulators) {
+      throw const SubakoException(
+        'Workflow server belum di-deploy pada project development ini. Gunakan build demo untuk mencoba alur simulasi.',
+      );
+    }
     final FirebaseFunctions? functions = cloudFunctions;
     if (functions == null) {
       throw const SubakoException('Cloud Functions belum dikonfigurasi.');
     }
     final HttpsCallableResult<dynamic> result = await functions
-        .httpsCallable(name)
+        .httpsCallable(
+          name,
+          options: HttpsCallableOptions(timeout: const Duration(seconds: 15)),
+        )
         .call(payload);
     final dynamic data = result.data;
-    return data is Map<String, dynamic> ? data : <String, dynamic>{};
+    return data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> fetchAiContext(String siteId) async {
+    if (AppConfig.trustedFunctionsEnabled || AppConfig.useEmulators) {
+      return _call('getAiContext', {'siteId': siteId});
+    }
+    // Spark development: authenticated, server reads scoped by deployed Rules.
+    final User? user = auth.currentUser;
+    if (user == null) {
+      throw const SubakoException('Masuk kembali untuk bertanya.');
+    }
+    final profile = await _loadProfile(user);
+    if (!profile.siteIds.contains(siteId)) {
+      throw const SubakoException('Site tidak dapat diakses.');
+    }
+    const options = GetOptions(source: Source.server);
+    final site = (await firestore.doc('sites/$siteId').get(options)).data();
+    final devices = await firestore
+        .collection('devices')
+        .where('siteId', isEqualTo: siteId)
+        .limit(15)
+        .get(options);
+    final List<Map<String, dynamic>> readings = [];
+    for (final device in devices.docs) {
+      final latest =
+          (await firestore.doc('telemetryLatest/${device.id}').get(options))
+              .data();
+      final DateTime? at = (latest?['recordedAt'] as Timestamp?)
+          ?.toDate()
+          .toUtc();
+      readings.add({
+        'deviceId': device.id,
+        'name': device.data()['name'],
+        'mode': device.data()['mode'],
+        'recordedAt': at?.toIso8601String(),
+        'dataState': at == null
+            ? 'OFFLINE'
+            : Freshness.evaluate(
+                at,
+                simulated: latest?['source'] == 'SIMULATION',
+              ).label,
+        'quality': latest?['quality'] ?? 'MISSING',
+        'upstreamCm': latest?['upstreamCm'],
+        'downstreamCm': latest?['downstreamCm'],
+        'flowLiterPerSecond': latest?['flowLiterPerSecond'],
+      });
+    }
+    final rules = await firestore
+        .collection('waterRules')
+        .where('siteId', isEqualTo: siteId)
+        .where('status', isEqualTo: 'PUBLISHED')
+        .limit(5)
+        .get(options);
+    final now = DateTime.now().toUtc();
+    final active = rules.docs
+        .where((d) {
+          final start = (d.data()['effectiveFrom'] as Timestamp?)?.toDate();
+          final end = (d.data()['effectiveTo'] as Timestamp?)?.toDate();
+          return start != null &&
+              end != null &&
+              !start.isAfter(now) &&
+              end.isAfter(now);
+        })
+        .map(
+          (d) => {
+            'id': d.id,
+            'version': d.data()['version'],
+            'schedule': d.data()['scheduleLabel'],
+            'parumanReference': d.data()['parumanReference'],
+          },
+        )
+        .toList();
+    final alerts = await firestore
+        .collection('alerts')
+        .where('siteId', isEqualTo: siteId)
+        .where('acknowledged', isEqualTo: false)
+        .limit(10)
+        .get(options);
+    return {
+      'siteId': siteId,
+      'siteName': site?['name'] ?? siteId,
+      'capturedAt': now.toIso8601String(),
+      'source': 'FIRESTORE_SECURITY_RULES_SCOPED',
+      'readings': readings,
+      'activeRules': active,
+      'alerts': alerts.docs
+          .map(
+            (d) => {
+              'id': d.id,
+              'title': d.data()['title'],
+              'severity': d.data()['severity'],
+            },
+          )
+          .toList(),
+    };
   }
 
   @override

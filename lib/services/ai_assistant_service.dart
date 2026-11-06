@@ -6,6 +6,7 @@ import '../shared/models/models.dart';
 /// Hanya berisi data yang sudah lolos otorisasi situs/pengguna.
 class AiContext {
   const AiContext({
+    this.siteId = '',
     required this.siteName,
     required this.telemetrySummary,
     required this.gateSummary,
@@ -16,6 +17,7 @@ class AiContext {
   });
 
   final String siteName;
+  final String siteId;
   final String telemetrySummary;
   final String gateSummary;
   final String activeRuleSummary;
@@ -132,6 +134,7 @@ AiContext buildAuthorizedContext({
       .toList(growable: false);
 
   return AiContext(
+    siteId: site.id,
     siteName: site.name,
     telemetrySummary:
         'level hulu ${telemetry.upstreamCm.toStringAsFixed(1)} cm, '
