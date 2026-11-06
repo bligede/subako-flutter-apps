@@ -34,7 +34,7 @@ Project development khusus: `subako-dev-mikiko`, Firestore Jakarta (`asia-southe
 | App Check Enforced untuk AI Logic | Dikonfirmasi pemilik melalui Console; probe tanpa token timeout, belum diverifikasi independen |
 | Respons Gemini melalui Firebase AI Logic | Timeout; belum memperoleh jawaban yang terverifikasi |
 
-Probe cloud terakhir dicatat pada `2026-11-06T14:59:31.224Z`. Model development dikonfigurasi `gemini-3.8-flash` setelah model sebelumnya ditolak untuk project baru. Konfigurasi Gemini di APK development diaktifkan berdasarkan konfirmasi setup Console, **bukan berdasarkan keberhasilan generasi**. UI menampilkan kegagalan request; tidak ada fallback jawaban demo di sesi Firebase.
+Probe cloud diulang pada `2026-11-06T15:14:31.460Z`: Auth, scope Firestore dan pertukaran App Check tetap lulus; generasi serta probe enforcement masih timeout. Model development dikonfigurasi `gemini-3.8-flash` setelah model sebelumnya ditolak untuk project baru. Konfigurasi Gemini di APK development diaktifkan berdasarkan konfirmasi setup Console, **bukan berdasarkan keberhasilan generasi**. UI menampilkan kegagalan request; tidak ada fallback jawaban demo di sesi Firebase.
 
 Fixture online berlabel SIMULATION dan berupa sampel statis. Simulator dinamis di APK Demo berjalan lokal. Tidak ada klaim data sensor lapangan tersedia.
 

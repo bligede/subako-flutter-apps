@@ -26,7 +26,7 @@
     "project": "subako-dev-mikiko",
     "firestoreRegion": "asia-southeast2",
     "rulesAndIndexesDeployment": "PASS",
-    "executedAt": "2026-11-06T14:59:31.224Z",
+    "executedAt": "2026-11-06T15:14:31.460Z",
     "authenticationHttpStatus": 200,
     "authorizedSiteHttpStatus": 200,
     "unauthorizedSiteHttpStatus": 403,
